@@ -50,18 +50,34 @@ class HTTPClient(object):
 
     def get_headers(self,data):
 
-        splits = data.split('\n')
-        header_list = splits[:-2]
-        headers = '\n'.join(header_list)
-        headers += '\n'
+        # splits = data.split('\n')
+        # headers = ''
+        # for line in splits:
+        #     if line != "\r" or line != "":
+        #         headers += line + "\n"
+
+        i = data.find("\r\n\r\n")
+        if i == -1:
+            i = data.find("\n\n")
+        
+        headers = data[:i] + "\n\n"
+
         return headers
 
     def get_body(self, data):
         
-        data = data.strip()
-        body = data.split('\n')[-1]
-        
+        # splits = data.split('\n')
+        # i = min(splits.index(''), splits.index("\r"))
+        # body_list = splits[i+1:]
+        # body = '\n'.join(body_list)
+        # body += '\n'
 
+        i = data.find("\r\n\r\n")
+        if i == -1:
+            i = data.find("\n\n")
+        
+        body = (data[i:]).strip()
+        body += "\n\n"
 
         return body
     
@@ -103,6 +119,15 @@ class HTTPClient(object):
         if query_str:
             path += '?' + query_str
 
+        if args:
+            for k, v in args.items():
+                k = urllib.parse.quote(k)
+                v = urllib.parse.quote(v)
+                path += k + '=' + v + '&'
+        
+             # Remove the &
+            path = path[:-1]
+
         if fragment:
             path += '#' + fragment
 
@@ -110,6 +135,7 @@ class HTTPClient(object):
         request = 'GET /' + path + ' HTTP/1.1\r\n' \
                 + 'Host: ' + HOST + ':' + str(PORT) + '\r\n' \
                 + 'User-Agent: shehrajlinux/1.0\r\n' \
+                + 'Accept: text/html;charset=utf-8, */*\r\n' \
                 + 'Connection: close\r\n' \
                 + '\r\n'
                 
@@ -124,6 +150,11 @@ class HTTPClient(object):
         code = self.get_code(response)
         header = self.get_headers(response)
         body = self.get_body(response)
+
+        print(f"GET Response code:\n{code}\n" + "-"*90+'\n')
+        print(f"GET Response header:\n{header}\n" + "-"*90+'\n')
+        print(f"GET Response body:\n{body}\n" + "-"*90+'\n')
+
         
         self.socket.close()
 
@@ -155,8 +186,9 @@ class HTTPClient(object):
                 v = urllib.parse.quote(v)
                 req_body += k + '=' + v + '&' 
 
-        # Now query_str has an extra '&' at the end 
-        req_body = req_body[:-1]
+        # Now query_str has an extra '&' at the end
+        if req_body: 
+            req_body = req_body[:-1]
 
         length = len(req_body)
        
@@ -182,9 +214,9 @@ class HTTPClient(object):
         header = self.get_headers(response)
         body = self.get_body(response)
 
-        print(f"\nResponse code: {code}")
-        print(f"Response body: {body}")
-        print(f"Response header: {header}\n\n")
+        print(f"POST Response code:\n{code}\n" + "-"*90+'\n')
+        print(f"POST Response header:\n{header}\n" + "-"*90+'\n')
+        print(f"POST Response body:\n{body}\n" + "-"*90+'\n')
         
         self.socket.close()
 
